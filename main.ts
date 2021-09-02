@@ -1,6 +1,3 @@
-bluetooth.onUartDataReceived(serial.delimiters(Delimiters.Colon), function () {
-	
-})
 input.onButtonPressed(Button.A, function () {
     if (buzz) {
         buzz = false
@@ -10,7 +7,7 @@ input.onButtonPressed(Button.A, function () {
 })
 function clear () {
     silent = false
-    led.setBrightness(64)
+    led.setBrightness(32)
     basic.showLeds(`
         . . . . .
         . . . . .
@@ -19,11 +16,21 @@ function clear () {
         . . . . .
         `)
 }
+bluetooth.onUartDataReceived(serial.delimiters(Delimiters.NewLine), function () {
+    command = bluetooth.uartReadUntil(serial.delimiters(Delimiters.Colon))
+    if (command == "buzz") {
+        buzz = true
+    } else {
+        buzz = false
+    }
+})
 input.onButtonPressed(Button.B, function () {
     silent = true
 })
+let command = ""
 let silent = false
 let buzz = false
+bluetooth.startUartService()
 music.setVolume(64)
 buzz = false
 clear()
