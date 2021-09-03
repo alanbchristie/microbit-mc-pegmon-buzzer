@@ -11,7 +11,19 @@
  * We also reset the silent flag.
  */
 /**
- * When the pegmon device connects, which is usually brief for the transmission of one command, we sit reading the UART, collecting characters that form a command up to a ":" delimiter. If the "command" is "buzz" we simply set the "buzz" boolean. We cease the alarm when if we get the "nobuzz" command and ignore everything else.
+ * The alarm bacjground task. Here we make a sound every 20 seconds or so and continuously flash an exclamation mark if "buzz" is true.
+ * 
+ * We don't make a sound if "silent" is true, which is true if the user has hit button "B"
+ */
+/**
+ * The "ping" background task - it just blanks the display for a short period of time (if "buzz" is false)
+ */
+/**
+ * When the pegmon device connects, which is usually brief for the transmission of one command, we sit reading the UART, collecting characters that form a command up to a ":" delimiter.
+ * 
+ * If the "command" is "buzz" we simply set the "buzz" boolean which cause the background task handling the alarm to run. We cease the alarm when if we get the "nobuzz" command and ignore everything else.
+ * 
+ * Th "ping" command causes the idle screen to go blank for a short period of time (if "buzz" is false).
  */
 // When pegmon disconnects from us we simply set connected to false. This really has no effect at the moment, We handle it simply to indicate we know we can handle it.
 bluetooth.onBluetoothConnected(function () {
@@ -23,6 +35,10 @@ bluetooth.onBluetoothConnected(function () {
         } else {
             if (command == "nobuzz") {
                 buzz = false
+            } else {
+                if (command == "ping") {
+                    ping = true
+                }
             }
         }
     }
@@ -53,12 +69,14 @@ input.onButtonPressed(Button.B, function () {
 })
 let silent = false
 let command = ""
+let ping = false
 let buzz = false
 let connected = false
 bluetooth.startUartService()
 music.setVolume(255)
 connected = false
 buzz = false
+ping = false
 clear()
 // The alarm loop - operating continuously in the background.
 // 
@@ -99,6 +117,25 @@ control.inBackground(function () {
                 }
             }
             clear()
+        }
+        basic.pause(1000)
+    }
+})
+control.inBackground(function () {
+    while (true) {
+        if (ping) {
+            if (!(buzz)) {
+                basic.showLeds(`
+                    . . . . .
+                    . . . . .
+                    . . . . .
+                    . . . . .
+                    . . . . .
+                    `)
+                basic.pause(500)
+                clear()
+            }
+            ping = false
         }
         basic.pause(1000)
     }
