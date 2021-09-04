@@ -6,11 +6,6 @@
  * Here we enable the bluetooth UART service (it's disabled by default) and set some control variables.
  */
 /**
- * A function to clear the display, used when the device starts and after an alarm has been cleared. Just keep one LED lit, to indicate we're "awake" and have power.
- * 
- * We also reset the silent flag.
- */
-/**
  * The alarm bacjground task. Here we make a sound every 20 seconds or so and continuously flash an exclamation mark if "buzz" is true.
  * 
  * We don't make a sound if "silent" is true, which is true if the user has hit button "B"
@@ -47,20 +42,27 @@ bluetooth.onBluetoothDisconnected(function () {
     connected = false
 })
 /**
+ * A function to clear the display, used when the device starts and after an alarm has been cleared. Just keep one LED lit, to indicate we're "awake" and have power. 
+ * 
+ * Each time clear is called the lit LED changes position - this helps the user gain confidence the device is being communicated with 
+ * 
+ * We also reset the silent flag.
+ */
+/**
  * If button "B" is pressed we set a control variable that silences the audible part of the alarm.
  * 
  * This essentially allows us to "acknowledge" the alarm, silencing it. The visual part of the alarm continues to operate until a command is received from pegmon.
  */
 function clear () {
     silent = false
-    led.setBrightness(4)
     basic.showLeds(`
         . . . . .
         . . . . .
-        . . # . .
+        . . . . .
         . . . . .
         . . . . .
         `)
+    led.plotBrightness(randint(0, 4), randint(0, 4), 4)
 }
 input.onButtonPressed(Button.B, function () {
     if (buzz) {
@@ -132,7 +134,7 @@ control.inBackground(function () {
                     . . . . .
                     . . . . .
                     `)
-                basic.pause(500)
+                basic.pause(1000)
                 clear()
             }
             ping = false
