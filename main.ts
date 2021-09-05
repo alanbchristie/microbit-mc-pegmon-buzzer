@@ -6,12 +6,24 @@
  * Here we enable the bluetooth UART service (it's disabled by default) and set some control variables.
  */
 /**
+ * A function to clear the display, used when the device starts and after an alarm has been cleared. Just keep one LED lit, to indicate we're "awake" and have power. 
+ * 
+ * Each time clear is called the lit LED changes position - this helps the user gain confidence the device is being communicated with 
+ * 
+ * We also reset the silent flag.
+ */
+/**
+ * If button "B" is pressed we set a control variable that silences the audible part of the alarm.
+ * 
+ * This essentially allows us to "acknowledge" the alarm, silencing it. The visual part of the alarm continues to operate until a command is received from pegmon.
+ */
+/**
  * The alarm bacjground task. Here we make a sound every 20 seconds or so and continuously flash an exclamation mark if "buzz" is true.
  * 
  * We don't make a sound if "silent" is true, which is true if the user has hit button "B"
  */
 /**
- * The "ping" background task - it just blanks the display for a short period of time (if "buzz" is false)
+ * The "ping" background task - it just changes the idle indicator row from the top or bottom row.
  */
 /**
  * When the pegmon device connects, which is usually brief for the transmission of one command, we sit reading the UART, collecting characters that form a command up to a ":" delimiter.
@@ -41,40 +53,36 @@ bluetooth.onBluetoothConnected(function () {
 bluetooth.onBluetoothDisconnected(function () {
     connected = false
 })
-/**
- * A function to clear the display, used when the device starts and after an alarm has been cleared. Just keep one LED lit, to indicate we're "awake" and have power. 
- * 
- * Each time clear is called the lit LED changes position - this helps the user gain confidence the device is being communicated with 
- * 
- * We also reset the silent flag.
- */
-/**
- * If button "B" is pressed we set a control variable that silences the audible part of the alarm.
- * 
- * This essentially allows us to "acknowledge" the alarm, silencing it. The visual part of the alarm continues to operate until a command is received from pegmon.
- */
 function clear () {
+    led.unplot(4, 2)
     silent = false
-    basic.showLeds(`
-        . . . . .
-        . . . . .
-        . . . . .
-        . . . . .
-        . . . . .
-        `)
-    led.plotBrightness(randint(0, 4), randint(0, 4), 4)
+    displayidle()
 }
 input.onButtonPressed(Button.B, function () {
     if (buzz) {
         silent = true
+        led.plotBrightness(4, 2, lednormal)
     }
 })
+function displayidle () {
+    led.unplot(0, 0)
+    led.unplot(4, 0)
+    led.unplot(0, 4)
+    led.unplot(4, 4)
+    led.plotBrightness(0, idlerow, lednormal)
+    led.plotBrightness(4, idlerow, lednormal)
+}
 let silent = false
 let command = ""
 let ping = false
 let buzz = false
 let connected = false
+let lednormal = 0
+let idlerow = 0
 bluetooth.startUartService()
+idlerow = 0
+lednormal = 4
+let ledbuzz = 32
 music.setVolume(255)
 connected = false
 buzz = false
@@ -90,29 +98,22 @@ clear()
 control.inBackground(function () {
     while (true) {
         if (buzz) {
-            led.setBrightness(32)
             while (buzz) {
                 if (!(silent)) {
                     soundExpression.giggle.play()
                 }
                 for (let index = 0; index < 20; index++) {
                     if (buzz) {
-                        basic.showLeds(`
-                            . . # . .
-                            . . # . .
-                            . . # . .
-                            . . . . .
-                            . . # . .
-                            `)
+                        led.plotBrightness(2, 0, ledbuzz)
+                        led.plotBrightness(2, 1, ledbuzz)
+                        led.plotBrightness(2, 2, ledbuzz)
+                        led.plotBrightness(2, 4, ledbuzz)
                         basic.pause(500)
-                        basic.showLeds(`
-                            . . . . .
-                            . . . . .
-                            . . . . .
-                            . . . . .
-                            . . . . .
-                            `)
-                        basic.pause(500)
+                        led.unplot(2, 0)
+                        led.unplot(2, 1)
+                        led.unplot(2, 2)
+                        led.unplot(2, 4)
+                        basic.pause(1000)
                     } else {
                         break;
                     }
@@ -120,25 +121,19 @@ control.inBackground(function () {
             }
             clear()
         }
-        basic.pause(1000)
+        basic.pause(2000)
     }
 })
 control.inBackground(function () {
     while (true) {
         if (ping) {
-            if (!(buzz)) {
-                basic.showLeds(`
-                    . . . . .
-                    . . . . .
-                    . . . . .
-                    . . . . .
-                    . . . . .
-                    `)
-                basic.pause(1000)
-                clear()
-            }
             ping = false
+            if (idlerow == 0) {
+                idlerow = 4
+            } else {
+                idlerow = 0
+            }
         }
-        basic.pause(1000)
+        basic.pause(2000)
     }
 })
