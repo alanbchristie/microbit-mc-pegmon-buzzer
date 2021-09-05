@@ -1,28 +1,4 @@
-/**
- * MAIN
- * 
- * An audible buzzer, expected to paired with a Raspberry Pi "pegmon" alarm system.
- * 
- * Here we enable the bluetooth UART service (it's disabled by default) and set some control variables.
- */
-/**
- * The "ping" background task.
- * 
- * Wet just change the idle indicator row from the top or bottom row and sets the "got-ping" variable, which prevents the "lost connection" background task from runnign it's alarm.
- */
-/**
- * A function to display the idle LEDs. These appear either on the top row or bottom, depending on the value of "idle-row"
- */
-/**
- * When the pegmon device connects, which is usually brief for the transmission of one command, we sit reading the UART, collecting characters that form a command up to a ":" delimiter.
- * 
- * If the "command" is "buzz" we simply set the "buzz" boolean which cause the background task handling the alarm to run. We cease the alarm when if we get the "nobuzz" command and ignore everything else.
- * 
- * Th "ping" command causes the idle screen to go blank for a short period of time (if "buzz" is false).
- */
-/**
- * A function to toggle the idle row - the row used for the idle LEDs. It's either 0 (top) or 4 (bottom)
- */
+// A function to toggle the idle row - the row used for the idle LEDs. It's either 0 (top) or 4 (bottom)
 function toggleidlerow () {
     if (idlerow == 0) {
         idlerow = 4
@@ -30,7 +6,11 @@ function toggleidlerow () {
         idlerow = 0
     }
 }
-// When pegmon disconnects from us we simply set connected to false. This really has no effect at the moment, We handle it simply to indicate we know we can handle it.
+// When the pegmon device connects, which is usually brief for the transmission of one command, we sit reading the UART, collecting characters that form a command up to a ":" delimiter.
+// 
+// If the "command" is "buzz" we simply set the "buzz" boolean which cause the background task handling the alarm to run. We cease the alarm when if we get the "nobuzz" command and ignore everything else.
+// 
+// Th "ping" command causes the idle screen to go blank for a short period of time (if "buzz" is false).
 bluetooth.onBluetoothConnected(function () {
     connected = true
     while (connected) {
@@ -48,32 +28,30 @@ bluetooth.onBluetoothConnected(function () {
         }
     }
 })
+// Does nothing really, other than acknowledge that there ia s "on disconnect" event
 bluetooth.onBluetoothDisconnected(function () {
     connected = false
 })
-/**
- * A function to clear the display, used when the device starts and after an alarm has been cleared. Just keep one LED lit, to indicate we're "awake" and have power. 
- * 
- * Each time clear is called the lit LED changes position - this helps the user gain confidence the device is being communicated with 
- * 
- * We also reset the silent flag.
- */
-/**
- * If button "B" is pressed we set a control variable that silences the audible part of the alarm.
- * 
- * This essentially allows us to "acknowledge" the alarm, silencing it. The visual part of the alarm continues to operate until a command is received from pegmon.
- */
+// A function to clear the display, used when the device starts and after an alarm has been cleared. Just keep one LED lit, to indicate we're "awake" and have power. 
+// 
+// Each time clear is called the lit LED changes position - this helps the user gain confidence the device is being communicated with 
+// 
+// We also reset the silent flag.
 function clear () {
     led.unplot(4, 2)
     silent = false
     displayidle()
 }
+// If button "B" is pressed we set a control variable that silences the audible part of the alarm.
+// 
+// This essentially allows us to "acknowledge" the alarm, silencing it. The visual part of the alarm continues to operate until a command is received from pegmon.
 input.onButtonPressed(Button.B, function () {
     if (buzz) {
         silent = true
         led.plotBrightness(4, 2, lednormal)
     }
 })
+// A function to display the idle LEDs. These appear either on the top row or bottom, depending on the value of "idle-row"
 function displayidle () {
     led.unplot(0, 0)
     led.unplot(4, 0)
@@ -82,6 +60,11 @@ function displayidle () {
     led.plotBrightness(0, idlerow, lednormal)
     led.plotBrightness(4, idlerow, lednormal)
 }
+// MAIN
+// 
+// An audible buzzer, expected to paired with a Raspberry Pi "pegmon" alarm system.
+// 
+// Here we enable the bluetooth UART service (it's disabled by default) and set some control variables.
 let silent = false
 let command = ""
 let ping = false
@@ -92,32 +75,18 @@ let idlerow = 0
 bluetooth.startUartService()
 idlerow = 0
 lednormal = 1
-let ledbuzz = 4
+let ledbuzz = 64
 music.setVolume(255)
 connected = false
 buzz = false
 ping = false
 let gotping = false
 clear()
-/**
- * The "alert" background task.
- * 
- * Here we make a sound every 20 seconds or so and continuously flash an exclamation mark if "buzz" is true.
- * 
- * We don't make a sound if "silent" is true, which is true if the user has hit button "B"
- */
-/**
- * The "lost connection" background task.
- * 
- * This background task monitors the ping receipts. If we don't get a ping at least one every 10 minutes we rapidly toggle the idle LEDs
- */
-// The alarm loop - operating continuously in the background.
+// The "alert" background task.
 // 
-// Here, if "buzz" is True we start the alarm sequence, which consists of making a warning sound and then flashing a visual symbol (an exclamation mark). We continue to do this, checking the "buzz" variable regularly, until "buzz" is false.
+// Here we make a sound every 20 seconds or so and continuously flash an exclamation mark if "buzz" is true.
 // 
-// If "silent" is True (which is set by pressing button "B" during the alarm sequence) we silence the audible part of the alarm but continue the visual part.
-// 
-// We increase the brightness of the LEDs which are dimmed again (by the "clear()" function) when the alarm ceases.
+// We don't make a sound if "silent" is true, which is true if the user has hit button "B"
 control.inBackground(function () {
     while (true) {
         if (buzz) {
@@ -147,6 +116,9 @@ control.inBackground(function () {
         basic.pause(2000)
     }
 })
+// The "ping" background task.
+// 
+// Wet just change the idle indicator row from the top or bottom row and sets the "got-ping" variable, which prevents the "lost connection" background task from runnign it's alarm.
 control.inBackground(function () {
     while (true) {
         if (ping) {
@@ -158,6 +130,9 @@ control.inBackground(function () {
         basic.pause(2000)
     }
 })
+// The "lost connection" background task.
+// 
+// This background task monitors the ping receipts. If we don't get a ping at least one every 10 minutes we rapidly toggle the idle LEDs
 control.inBackground(function () {
     while (true) {
         gotping = false
