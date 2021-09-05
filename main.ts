@@ -6,12 +6,12 @@
  * Here we enable the bluetooth UART service (it's disabled by default) and set some control variables.
  */
 /**
- * The alarm bacjground task. Here we make a sound every 20 seconds or so and continuously flash an exclamation mark if "buzz" is true.
+ * The "ping" background task.
  * 
- * We don't make a sound if "silent" is true, which is true if the user has hit button "B"
+ * Wet just change the idle indicator row from the top or bottom row and sets the "got-ping" variable, which prevents the "lost connection" background task from runnign it's alarm.
  */
 /**
- * The "ping" background task - it just changes the idle indicator row from the top or bottom row.
+ * A function to display the idle LEDs. These appear either on the top row or bottom, depending on the value of "idle-row"
  */
 /**
  * When the pegmon device connects, which is usually brief for the transmission of one command, we sit reading the UART, collecting characters that form a command up to a ":" delimiter.
@@ -19,6 +19,9 @@
  * If the "command" is "buzz" we simply set the "buzz" boolean which cause the background task handling the alarm to run. We cease the alarm when if we get the "nobuzz" command and ignore everything else.
  * 
  * Th "ping" command causes the idle screen to go blank for a short period of time (if "buzz" is false).
+ */
+/**
+ * A function to toggle the idle row - the row used for the idle LEDs. It's either 0 (top) or 4 (bottom)
  */
 function toggleidlerow () {
     if (idlerow == 0) {
@@ -88,7 +91,7 @@ let lednormal = 0
 let idlerow = 0
 bluetooth.startUartService()
 idlerow = 0
-lednormal = 2
+lednormal = 1
 let ledbuzz = 4
 music.setVolume(255)
 connected = false
@@ -97,6 +100,15 @@ ping = false
 let gotping = false
 clear()
 /**
+ * The "alert" background task.
+ * 
+ * Here we make a sound every 20 seconds or so and continuously flash an exclamation mark if "buzz" is true.
+ * 
+ * We don't make a sound if "silent" is true, which is true if the user has hit button "B"
+ */
+/**
+ * The "lost connection" background task.
+ * 
  * This background task monitors the ping receipts. If we don't get a ping at least one every 10 minutes we rapidly toggle the idle LEDs
  */
 // The alarm loop - operating continuously in the background.
