@@ -81,8 +81,8 @@ let lednormal = 0
 let idlerow = 0
 bluetooth.startUartService()
 idlerow = 0
-lednormal = 4
-let ledbuzz = 32
+lednormal = 2
+let ledbuzz = 4
 music.setVolume(255)
 connected = false
 buzz = false
