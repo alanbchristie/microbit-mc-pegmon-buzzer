@@ -133,6 +133,7 @@ control.inBackground(function () {
             } else {
                 idlerow = 0
             }
+            displayidle()
         }
         basic.pause(2000)
     }
